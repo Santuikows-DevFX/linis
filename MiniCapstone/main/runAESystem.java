@@ -86,6 +86,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
 
         runSystem.setExpiredStatus();
         runSystem.setEmptyStatus(); 
+        runSystem.setEmptyStatusForNonExp();
 
         runSystem.moveExpiredProductsQnt(); //function for detecting products with 0 days left and removing it from the table, inserting it into expired prd table.
         runSystem.moveEmptyProductsQnt();
@@ -107,6 +108,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
 
             setExpiredStatus();
             setEmptyStatus(); 
+            setEmptyStatusForNonExp();
 
             moveExpiredProductsQnt(); //function for detecting products with 0 days left and removing it from the table, inserting it into expired prd table.
             moveEmptyProductsQnt();
@@ -241,6 +243,8 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
             }while(isValid == false);
 
         } catch (Exception e) {
+
+            System.out.println(e);
         }
 
     }
@@ -291,6 +295,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                     System.out.println("\t\t\t\t\t\t\t\t\tMessage: " + expiredPrdCount + "  product(s) needs re-stocking");
                     System.out.println();
                     System.out.println("\t\t\t\t\t\t\t\t\t      PRESS \"1\" TO NOTIFY THE STAFF");
+                    System.out.print("\t\t\t\t\t\t\t\t\t\t\t> ");
                     String test = sc.nextLine();
         
                     if(test.equalsIgnoreCase("1")) { //condition to notify the staff
@@ -424,7 +429,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
             System.out.println();
 
             System.out.println("\t\t\t\t\t\t\t\t\t\033[1;37m  YOU HAVE NOTIFICATION FROM ADMIN\033[0m");
-
+            System.out.println();
             PreparedStatement numberOfExpired = conn.prepareStatement("SELECT * FROM `products` WHERE product_status != 'IN STOCK'");
             ResultSet fetchAllExpired = numberOfExpired.executeQuery();
 
@@ -437,9 +442,9 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
             }
 
             System.out.println("\t\t\t\t\t\t\t\t\tMessage: " + expiredPrdCount + " product(s) needs re-stocking");
-
-
+            System.out.println();
             System.out.println("\t\t\t\t\t\t\t\t      PRESS \"1\" TO CONFIRM AND START MANAGING NOW");
+            System.out.print("\t\t\t\t\t\t\t\t\t\t\t> ");
             String test = sc.nextLine();
 
             if(test.equalsIgnoreCase("1")) { 
@@ -787,6 +792,34 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
         }
     }
 
+    @Override
+    public void setEmptyStatusForNonExp() { 
+
+        try {
+
+            aeDataBase = new config();
+            conn = aeDataBase.getConnection();
+
+            String emptyStatus = "OUT OF STOCK";
+            
+            PreparedStatement checkIfEmpty = conn.prepareStatement("SELECT * FROM products WHERE product_quantity = 0 AND product_exp = ''");
+            ResultSet fetchEmptyQntPrds = checkIfEmpty.executeQuery();
+
+            PreparedStatement updateStatus = null;
+
+            while(fetchEmptyQntPrds.next()) { 
+
+                updateStatus = conn.prepareStatement("UPDATE products SET product_status = '"+ emptyStatus +"' WHERE product_quantity = 0 AND product_exp = ''");
+
+            }
+
+            updateStatus.executeUpdate();
+            
+        } catch (Exception e) {
+        }
+
+    }
+
 
     String newProductExp;
     
@@ -799,7 +832,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
 
             do{
 
-            PreparedStatement selectAllQuery = conn.prepareStatement("SELECT * FROM `products` WHERE product_status != 'IN STOCK'");
+            PreparedStatement selectAllQuery = conn.prepareStatement("SELECT * FROM products WHERE product_status != 'IN STOCK'");
             ResultSet fetchProducts = selectAllQuery.executeQuery();
 
             if(!fetchProducts.next()) { 
@@ -851,7 +884,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
 
                     isValid = true;
 
-                    PreparedStatement getAllProducts = conn.prepareStatement("SELECT * FROM products WHERE product_id = '"+ productID +"' AND product_quantity = 0 AND product_exp != ''");
+                    PreparedStatement getAllProducts = conn.prepareStatement("SELECT * FROM products WHERE product_id = '"+ productID +"' AND product_quantity = 0");
                     ResultSet fetchAll = getAllProducts.executeQuery();
 
                     if(fetchAll.isBeforeFirst()) { 
@@ -878,106 +911,172 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
 
                             }
         
-                            System.out.println();
+                            PreparedStatement checkIfNonExp = conn.prepareStatement("SELECT * FROM products WHERE product_id = '"+ productID +"' AND product_exp = ''");
+                            ResultSet checkIfNonExpRes = checkIfNonExp.executeQuery();
+
+                            if(checkIfNonExpRes.isBeforeFirst()) {
+
+                                System.out.println();
                 
-                            System.out.print("\t\t\t\t\t\t\t\t        New stocks: ");
-                            String quantityToAdd = sc.nextLine();
-        
-                           for(int j = 0; j < quantityToAdd.length(); j++) { 
-        
-                                if((int) quantityToAdd.charAt(j) >= 33 && (int) quantityToAdd.charAt(j) <= 47 || (int) quantityToAdd.charAt(j) >= 58 && (int) quantityToAdd.charAt(j) <= 126) { 
-        
-                                    System.out.print("\033[H\033[2J");  
-                                    System.out.flush();
-        
-                                    isValid = false;
-                                    System.out.println();
-                                    System.out.println(generalPrompt.messagePrompt());
-                                    
-        
-                                }else { 
-                            
-                                    do{
-                                        //check date input is correct format
-                        
+                                System.out.print("\t\t\t\t\t\t\t\t        New stocks to add: ");
+                                String quantityToAdd = sc.nextLine();
+            
+                               for(int j = 0; j < quantityToAdd.length(); j++) { 
+            
+                                    if((int) quantityToAdd.charAt(j) >= 33 && (int) quantityToAdd.charAt(j) <= 47 || (int) quantityToAdd.charAt(j) >= 58 && (int) quantityToAdd.charAt(j) <= 126) { 
+            
+                                        System.out.print("\033[H\033[2J");  
+                                        System.out.flush();
+            
+                                        isValid = false;
                                         System.out.println();
-                                        System.out.print("\t\t\t\t\t\t\t Enter Updated Product Expiration Date in this format (YYYY-MM-DD): ");
-                                        newProductExp = sc.nextLine();
-                                        System.out.println(); 
-                                                                                
-                                        if(formatDate.format(dateToday).compareTo(newProductExp) > 0) { 
-                        
-                                            isValid = false;
-                                            System.out.println(dateInvalid.messagePrompt());
-                        
-                                        }else { 
-                        
-                                            isValid = true;
-
-                                            Date UpdatedProdExp = Date.valueOf(newProductExp); //converting the string value into a util.Date
-
-                                            long updatedDaysLeft = compareDates(dateToday, UpdatedProdExp) + 1;
-                                                                                       
+                                        System.out.println(generalPrompt.messagePrompt());
+                                        
+            
+                                    }else { 
+                                
+                                        do{
+                                                                                          
                                             PreparedStatement getProduct = conn.prepareStatement("SELECT * FROM products WHERE product_id = '"+ productID +"'");
                                             ResultSet fetchProductValue = getProduct.executeQuery();
-                
+                    
                                             fetchProductValue.next();
-            
-                                            int convertedQuantityToAdd = Integer.parseInt(quantityToAdd);
                 
+                                            int convertedQuantityToAdd = Integer.parseInt(quantityToAdd);
+                    
                                             int prevQuantity = fetchProductValue.getInt("product_quantity");
                                             int updatedQuantity = convertedQuantityToAdd + prevQuantity;
-                        
+                            
                                             PreparedStatement updateRestock = conn.prepareStatement("UPDATE products SET product_quantity = '"+ updatedQuantity +"' WHERE product_id = '"+ productID +"'");
-
+    
                                             updateRestock.executeUpdate();
-
-                                            PreparedStatement updateProductExp = conn.prepareStatement("UPDATE products SET product_exp = '"+ newProductExp +"' WHERE product_id = '"+ productID +"'");
-                                            updateProductExp.executeUpdate();
-
-                                            PreparedStatement updateDaysLeft = conn.prepareStatement("UPDATE products SET days_left = '"+ updatedDaysLeft +"' WHERE product_id = '"+ productID +"'");
-                                            updateDaysLeft.executeUpdate();
-
-                                            System.out.print("\033[H\033[2J");  
-                                            System.out.flush();
-
-                                            System.out.println(updatePrompt.messagePrompt());
-
+    
                                             String updatedStatus = "IN STOCK";
-
+    
                                             PreparedStatement updateStatus = conn.prepareStatement("UPDATE products SET product_status = '"+ updatedStatus +"' WHERE product_id = '"+ productID +"'");
                                             updateStatus.executeUpdate();
-
+    
                                             PreparedStatement checkIfNoMoreZeroQnt = conn.prepareStatement("SELECT * FROM products WHERE product_quantity = 0");
                                             ResultSet fetchResult = checkIfNoMoreZeroQnt.executeQuery();
-
+    
                                             if(!fetchResult.next()) { 
-
-                                                System.out.println();
-                                                System.out.println("NO MORE TO RESTOCK");
-
-                                                expiredProductsNotifCount = 0;
-
-                                                PreparedStatement updateNotif = conn.prepareStatement("UPDATE notification_count SET notif_admin = '"+ expiredProductsNotifCount + "'");
-                                                updateNotif.executeUpdate();
-
-                                                staffTask();
-
+            
+                                                    System.out.println(updatePrompt.messagePrompt());
+    
+                                                    expiredProductsNotifCount = 0;
+    
+                                                    PreparedStatement updateNotif = conn.prepareStatement("UPDATE notification_count SET notif_admin = '"+ expiredProductsNotifCount + "'");
+                                                    updateNotif.executeUpdate();
+    
+                                                    staffTask();
+    
                                             }else { 
-
+    
                                                 restockProduct();
+
                                             }
-                                            
-                                        }
+
+                                        }while(isValid == false);        
+                                    }
+                               }
+
+                            }else { 
+
+                                System.out.println();
+                
+                                System.out.print("\t\t\t\t\t\t\t\t        New stocks to add: ");
+                                String quantityToAdd = sc.nextLine();
+            
+                               for(int j = 0; j < quantityToAdd.length(); j++) { 
+            
+                                    if((int) quantityToAdd.charAt(j) >= 33 && (int) quantityToAdd.charAt(j) <= 47 || (int) quantityToAdd.charAt(j) >= 58 && (int) quantityToAdd.charAt(j) <= 126) { 
+            
+                                        System.out.print("\033[H\033[2J");  
+                                        System.out.flush();
+            
+                                        isValid = false;
+                                        System.out.println();
+                                        System.out.println(generalPrompt.messagePrompt());
+                                        
+            
+                                    }else { 
                                 
-                                    
-                              
-                                    }while(isValid == false);        
-                                }
-                           }
+                                        do{
+                                            //check date input is correct format
+                            
+                                            System.out.println();
+                                            System.out.print("\t\t\t\t\t\t\t Enter Updated Product Expiration Date in this format (YYYY-MM-DD): ");
+                                            newProductExp = sc.nextLine();
+                                            System.out.println(); 
+                                                                                    
+                                            if(formatDate.format(dateToday).compareTo(newProductExp) > 0) { 
+                            
+                                                isValid = false;
+                                                System.out.println(dateInvalid.messagePrompt());
+                            
+                                            }else { 
+                            
+                                                isValid = true;
+    
+                                                Date UpdatedProdExp = Date.valueOf(newProductExp); //converting the string value into a util.Date
+    
+                                                long updatedDaysLeft = compareDates(dateToday, UpdatedProdExp) + 1;
+                                                                                           
+                                                PreparedStatement getProduct = conn.prepareStatement("SELECT * FROM products WHERE product_id = '"+ productID +"'");
+                                                ResultSet fetchProductValue = getProduct.executeQuery();
+                    
+                                                fetchProductValue.next();
+                
+                                                int convertedQuantityToAdd = Integer.parseInt(quantityToAdd);
+                    
+                                                int prevQuantity = fetchProductValue.getInt("product_quantity");
+                                                int updatedQuantity = convertedQuantityToAdd + prevQuantity;
+                            
+                                                PreparedStatement updateRestock = conn.prepareStatement("UPDATE products SET product_quantity = '"+ updatedQuantity +"' WHERE product_id = '"+ productID +"'");
+    
+                                                updateRestock.executeUpdate();
+    
+                                                PreparedStatement updateProductExp = conn.prepareStatement("UPDATE products SET product_exp = '"+ newProductExp +"' WHERE product_id = '"+ productID +"'");
+                                                updateProductExp.executeUpdate();
+    
+                                                PreparedStatement updateDaysLeft = conn.prepareStatement("UPDATE products SET days_left = '"+ updatedDaysLeft +"' WHERE product_id = '"+ productID +"'");
+                                                updateDaysLeft.executeUpdate();
+
+                                                String updatedStatus = "IN STOCK";
+    
+                                                PreparedStatement updateStatus = conn.prepareStatement("UPDATE products SET product_status = '"+ updatedStatus +"' WHERE product_id = '"+ productID +"'");
+                                                updateStatus.executeUpdate();
+    
+                                                PreparedStatement checkIfNoMoreZeroQnt = conn.prepareStatement("SELECT * FROM products WHERE product_quantity = 0");
+                                                ResultSet fetchResult = checkIfNoMoreZeroQnt.executeQuery();
+    
+
+                                                if(!fetchResult.next()) { 
+    
+                                                    System.out.println();
+    
+                                                    expiredProductsNotifCount = 0;
+    
+                                                    PreparedStatement updateNotif = conn.prepareStatement("UPDATE notification_count SET notif_admin = '"+ expiredProductsNotifCount + "'");
+                                                    updateNotif.executeUpdate();
+    
+                                                    staffTask();
+
+                                                }else { 
+
+                                                    restockProduct();
+
+                                                }
+                                                
+                                            }
+
+                                        }while(isValid == false);        
+                                    }
+                               }
+                            }
+                           
         
                         }while(isValid == false);
-
                     }else { 
                         
                         System.out.print("\033[H\033[2J");  
@@ -1016,7 +1115,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
 
         do{
 
-            PreparedStatement getAllProducts = conn.prepareStatement("SELECT * FROM products");
+            PreparedStatement getAllProducts = conn.prepareStatement("SELECT * FROM products WHERE product_quantity > 0");
             ResultSet fetchProducts = getAllProducts.executeQuery();
 
             System.out.println("=====================================================================================================================================================================================\n");
@@ -1117,9 +1216,19 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
             }
 
             System.out.println();
-
+            System.out.println("\t\t\t\t\t\t\t\t\t\t TYPE \"0\" TO CANCEL");
             System.out.print("\t\t\t\t\t\t\t\t        Stocks to deduct: ");
             quantityToDeduct = sc.nextLine();
+
+            if(quantityToDeduct.equals("0")){
+
+                System.out.print("\033[H\033[2J");  
+                System.out.flush();
+
+                isValid = true;
+                sellProduct();
+            
+            }
 
             PreparedStatement getQnt = conn.prepareStatement("SELECT * FROM products WHERE product_id = '"+ productID +"'");
             ResultSet fetchQnt = getQnt.executeQuery();
@@ -1247,7 +1356,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
 
             do{
 
-            PreparedStatement selectAllQuery = conn.prepareStatement("SELECT * FROM products");
+            PreparedStatement selectAllQuery = conn.prepareStatement("SELECT * FROM products WHERE product_quantity > 0");
             ResultSet fetchProducts = selectAllQuery.executeQuery();
 
             System.out.println();
@@ -1481,7 +1590,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
             System.out.println();
             System.out.println("=====================================================================================================================================================================================\n");
             System.out.println("\t\t\t\t\t\t\t\t\t       CRITICAL LEVEL PRODUCTS TABLE" );
-            System.out.println("\t\t\t\t\t\t\t\t\t          (CRITICAL LEVEL IS <10)");
+            System.out.println("\t\t\t\t\t\t\t\t\t     (CRITICAL LEVEL IS <10 STOCKS QNT)");
             System.out.println("\t\t\t\t\t\t ----------------------------------------------------------------------------------");
             System.out.printf("\t\t\t\t\t\t\t   %5s%20s%23s%15s", " ID" ,"      PRODUCT NAME" , "   PRODUCT BRAND", " STOCKS");
             System.out.println();
@@ -1606,8 +1715,11 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                 isValid = false;
 
                 try {
+
+                    PreparedStatement checkIfStatsEmpty = conn.prepareStatement("SELECT * FROM product_statistics");
+                    ResultSet statsCheck = checkIfStatsEmpty.executeQuery();
                     
-                    if(!fetchStats.next()) { 
+                    if(!statsCheck.next()) { 
 
                         isValid = false;
                         System.out.println();
@@ -1885,6 +1997,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                 }
 
                 System.out.println();
+                System.out.println("\t\t\t\t\t\t\t\t\t\t TYPE \"0\" TO CANCEL");
                 System.out.print("\t\t\t\t\t\t\t\t\t      Select product: ");
                 productName = sc.nextLine();
 
@@ -1920,6 +2033,14 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                     genericProduct = "TOCCINO";
                     productsInv.setProductName(genericProduct);
 
+                }else if(productName.equals("0")){
+
+                    System.out.print("\033[H\033[2J");  
+                    System.out.flush();
+
+                    isValid = true;
+                    addProduct();
+                
                 }else { 
 
                     System.out.print("\033[H\033[2J");  
@@ -1992,16 +2113,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                     System.out.println();
                     System.out.print("\t\t\t\t\t\t\t\t      Enter Product Expiration Date in this format (YYYY-MM-DD): ");
                     productExp = sc.nextLine();
-                    System.out.println(); 
-            
-                    // if(productExp.equals("0")) { 
-            
-                    //     System.out.println();
-                    //     System.out.println(cancelAction.messagePrompt());
-                    //     System.out.print("\033[H\033[2J");  
-                    //     System.out.flush();
-
-                    // }
+                    System.out.println();   
                     
                     if(formatDate.format(dateToday).compareTo(productExp) > 0) { 
 
@@ -2078,6 +2190,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                 }
 
                 System.out.println();
+                System.out.println("\t\t\t\t\t\t\t\t\t\t TYPE \"0\" TO CANCEL");
                 System.out.print("\t\t\t\t\t\t\t\t\t      Select product: ");
                 productName = sc.nextLine();
 
@@ -2113,6 +2226,14 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                     genericProduct = "MEAT LOAF";
                     productsInv.setProductName(genericProduct);
 
+                }else if(productName.equals("0")){
+
+                    System.out.print("\033[H\033[2J");  
+                    System.out.flush();
+
+                    isValid = true;
+                    addProduct();
+                
                 }else { 
 
                     System.out.print("\033[H\033[2J");  
@@ -2142,15 +2263,6 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                         productQnt = sc.nextInt();
 
                         sc.nextLine();
-        
-                        // if(productQnt.equals("0")) { 
-        
-                        //     System.out.println();
-                        //     System.out.println(cancelAction.messagePrompt());
-                        //      System.out.print("\033[H\033[2J");  
-                        // System.out.flush();
-        
-                        // }
         
                         convertQnt = Integer.toString(productQnt);
         
@@ -2186,15 +2298,6 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                     System.out.print("\t\t\t\t\t\t\t\t      Enter Product Expiration Date in this format (YYYY-MM-DD): ");
                     productExp = sc.nextLine();
                     System.out.println(); 
-            
-                    // if(productExp.equals("0")) { 
-            
-                    //     System.out.println();
-                    //     System.out.println(cancelAction.messagePrompt());
-                    //     System.out.print("\033[H\033[2J");  
-                    //     System.out.flush();
-
-                    // }
             
                     if(formatDate.format(dateToday).compareTo(productExp) > 0) { 
 
@@ -2269,6 +2372,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                 }
 
                 System.out.println();
+                System.out.println("\t\t\t\t\t\t\t\t\t\t TYPE \"0\" TO CANCEL");
                 System.out.print("\t\t\t\t\t\t\t\t\t      Select product: ");
                 productName = sc.nextLine();
 
@@ -2304,6 +2408,14 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                     genericProduct = "BISCUITS";
                     productsInv.setProductName(genericProduct);
 
+                }else if(productName.equals("0")){
+
+                    System.out.print("\033[H\033[2J");  
+                    System.out.flush();
+
+                    isValid = true;
+                    addProduct();
+                
                 }else { 
 
                     System.out.print("\033[H\033[2J");  
@@ -2333,15 +2445,6 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                         productQnt = sc.nextInt();
 
                         sc.nextLine();
-        
-                        // if(productQnt.equals("0")) { 
-        
-                        //     System.out.println();
-                        //     System.out.println(cancelAction.messagePrompt());
-                        //      System.out.print("\033[H\033[2J");  
-                        // System.out.flush();
-        
-                        // }
         
                         convertQnt = Integer.toString(productQnt);
         
@@ -2376,15 +2479,6 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                     System.out.print("\t\t\t\t\t\t\t\t      Enter Product Expiration Date in this format (YYYY-MM-DD): ");
                     productExp = sc.nextLine();
                     System.out.println(); 
-            
-                    // if(productExp.equals("0")) { 
-            
-                    //     System.out.println();
-                    //     System.out.println(cancelAction.messagePrompt());
-                    //     System.out.print("\033[H\033[2J");  
-                    //     System.out.flush();
-
-                    // }
 
                     if(formatDate.format(dateToday).compareTo(productExp) > 0) { 
 
@@ -2462,6 +2556,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                 }
 
                 System.out.println();
+                System.out.println("\t\t\t\t\t\t\t\t\t\t TYPE \"0\" TO CANCEL");
                 System.out.print("\t\t\t\t\t\t\t\t\t      Select product: ");
                 productName = sc.nextLine();
 
@@ -2502,6 +2597,14 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                     productsInv.setProductName(genericProduct);
                     nonExpiryItems();
 
+                }else if(productName.equals("0")){
+
+                    System.out.print("\033[H\033[2J");  
+                    System.out.flush();
+
+                    isValid = true;
+                    addProduct();
+                
                 }else { 
 
                     System.out.print("\033[H\033[2J");  
@@ -2554,6 +2657,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                 }
 
                 System.out.println();
+                System.out.println("\t\t\t\t\t\t\t\t\t\t TYPE \"0\" TO CANCEL");
                 System.out.print("\t\t\t\t\t\t\t\t\t      Select product: ");
                 productName = sc.nextLine();
 
@@ -2594,6 +2698,14 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                     productsInv.setProductName(genericProduct);
                     nonExpiryItems();
 
+                }else if(productName.equals("0")){
+
+                    System.out.print("\033[H\033[2J");  
+                    System.out.flush();
+
+                    isValid = true;
+                    addProduct();
+                
                 }else { 
 
                     System.out.print("\033[H\033[2J");  
@@ -2646,6 +2758,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                 }
 
                 System.out.println();
+                System.out.println("\t\t\t\t\t\t\t\t\t\t TYPE \"0\" TO CANCEL");
                 System.out.print("\t\t\t\t\t\t\t\t\t      Select product: ");
                 productName = sc.nextLine();
 
@@ -2686,6 +2799,14 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                     productsInv.setProductName(genericProduct);
                     nonExpiryItems();
 
+                }else if(productName.equals("0")){
+
+                    System.out.print("\033[H\033[2J");  
+                    System.out.flush();
+
+                    isValid = true;
+                    addProduct();
+                
                 }else { 
 
                     System.out.print("\033[H\033[2J");  
@@ -2738,6 +2859,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                 }
 
                 System.out.println();
+                System.out.println("\t\t\t\t\t\t\t\t\t\t TYPE \"0\" TO CANCEL");
                 System.out.print("\t\t\t\t\t\t\t\t\t      Select product: ");
                 productName = sc.nextLine();
 
@@ -2778,6 +2900,14 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                     productsInv.setProductName(genericProduct);
                     nonExpiryItems();
 
+                }else if(productName.equals("0")){
+
+                    System.out.print("\033[H\033[2J");  
+                    System.out.flush();
+
+                    isValid = true;
+                    addProduct();
+                
                 }else { 
 
                     System.out.print("\033[H\033[2J");  
@@ -2830,6 +2960,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                 }
 
                 System.out.println();
+                System.out.println("\t\t\t\t\t\t\t\t\t\t TYPE \"0\" TO CANCEL");
                 System.out.print("\t\t\t\t\t\t\t\t\t      Select product: ");
                 productName = sc.nextLine();
 
@@ -2870,6 +3001,14 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                     productsInv.setProductName(genericProduct);
                     nonExpiryItems();
 
+                }else if(productName.equals("0")){
+
+                    System.out.print("\033[H\033[2J");  
+                    System.out.flush();
+
+                    isValid = true;
+                    addProduct();
+                
                 }else { 
 
                     System.out.print("\033[H\033[2J");  
@@ -2922,6 +3061,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                 }
 
                 System.out.println();
+                System.out.println("\t\t\t\t\t\t\t\t\t\t TYPE \"0\" TO CANCEL");
                 System.out.print("\t\t\t\t\t\t\t\t\t      Select product: ");
                 productName = sc.nextLine();
 
@@ -2962,6 +3102,14 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                     productsInv.setProductName(genericProduct);
                     nonExpiryItems();
 
+                }else if(productName.equals("0")){
+
+                    System.out.print("\033[H\033[2J");  
+                    System.out.flush();
+
+                    isValid = true;
+                    addProduct();
+                
                 }else { 
 
                     System.out.print("\033[H\033[2J");  
@@ -3014,6 +3162,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                 }
 
                 System.out.println();
+                System.out.println("\t\t\t\t\t\t\t\t\t\t TYPE \"0\" TO CANCEL");
                 System.out.print("\t\t\t\t\t\t\t\t\t      Select product: ");
                 productName = sc.nextLine();
 
@@ -3054,6 +3203,14 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
                     productsInv.setProductName(genericProduct);
                     nonExpiryItems();
 
+                }else if(productName.equals("0")){
+
+                    System.out.print("\033[H\033[2J");  
+                    System.out.flush();
+
+                    isValid = true;
+                    addProduct();
+                
                 }else { 
 
                     System.out.print("\033[H\033[2J");  
@@ -3674,7 +3831,12 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
         aeDataBase = new config();
         conn = aeDataBase.getConnection();
 
-        String staticID = "20230"; //static ID
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy"); // formatter so it will only get the current year
+
+        long getYeaR = System.currentTimeMillis();
+        Date todaysYear = new Date(getYeaR); // get the date today
+
+        String IDBasedOnYear = formatter.format(todaysYear) + "0"; //ID based on year
             
         PreparedStatement getID = conn.prepareStatement("SELECT * FROM products");
         ResultSet getCurrentID = getID.executeQuery();
@@ -3686,7 +3848,7 @@ public class runAESystem extends absMethods { //goal to make kinda reallistic by
         }
 
         Statement state = conn.createStatement();
-        String concatQuery = "SELECT product_name, CONCAT('"+ staticID +"', '"+ dbID +"') AS combinedID FROM products";
+        String concatQuery = "SELECT product_name, CONCAT('"+ IDBasedOnYear +"', '"+ dbID +"') AS combinedID FROM products";
         ResultSet concatResult = state.executeQuery(concatQuery);
 
         concatResult.next();

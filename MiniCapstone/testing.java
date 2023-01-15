@@ -17,31 +17,14 @@ public class testing  {
 
     public static void main(String[] args) {
 
-        Animal yest = new Animal();
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy");
 
-        long dateToday = System.currentTimeMillis();
-        String todays = format.format(dateToday);
+        long date = System.currentTimeMillis();
+        Date todaysYear = new Date(date);
 
-        long getYesterday = System.currentTimeMillis() - 86400000;
+        String year = formatter.format(todaysYear) + "0";
 
-        if(todays.compareTo(format.format(yest.getYesterday())) == 0) { //january 13
-
-            System.out.println("rj cock = rj cock");
-            
-        }else if(todays.compareTo(format.format(yest.getYesterday())) > 0) { //january 12
-
-            System.out.println("yung yesterday past na");
-
-        }else if(todays.compareTo(format.format(yest.getYesterday())) < 0) { //magiging kahapon
-
-            System.out.println("yung today is past na");
-
-        }else { 
-
-
-
-        }
+        System.out.println(year);
 
     }
 

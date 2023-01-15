@@ -11,15 +11,9 @@ public class productsInv { //encapsulate data
     private Date product_exp, date_today, date_added, date_quantity_modified, date_removed;
     private long days_left;
 
-    // private int product_id;
     private String product_brand;
 
     //mutators
-
-    // public void setProductID(int product_id) { 
-
-    //     this.product_id = product_id;
-    // }
 
     public void setProductBrand(String product_brand) { 
 
@@ -76,12 +70,6 @@ public class productsInv { //encapsulate data
 
         this.date_added = date_added;
     }
-
-    //accessors
-    // public int getProductID() { 
-
-    //     return product_id;
-    // }
 
     public String getProductBrand() { 
 

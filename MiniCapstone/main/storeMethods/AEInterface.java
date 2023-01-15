@@ -63,6 +63,8 @@ public interface AEInterface {
     public abstract void setExpiredStatus();
 
     public abstract void setEmptyStatus();
+
+    public abstract void setEmptyStatusForNonExp();
     
     //---- revision ends
 
